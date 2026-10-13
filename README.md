@@ -150,6 +150,87 @@ python src/ingest.py
 python src/chat.py
 ```
 
+## Implementação deste projeto
+
+Esta implementação acessa o modelo de embeddings e o LLM via um endpoint compatível com a API da OpenAI, configurado pelas variáveis `OPENAI_BASE_URL` e `OPENAI_API_KEY`. Isso permite usar a OpenAI diretamente ou qualquer gateway compatível.
+
+### Modelos utilizados
+
+| Função | Modelo | Observação |
+|---|---|---|
+| Embeddings | `text-embedding-3-small` | Dimensão 1536 |
+| LLM (resposta) | `gpt-4o-mini` | Alternativa leve: `gemini-2.5-flash` |
+
+### Pré-requisitos
+
+- Docker e Docker Compose
+- Python 3.12+
+- Uma API key válida (OpenAI ou gateway compatível com a API da OpenAI)
+
+### Estrutura dos arquivos
+
+```
+src/
+├── config.py    # Configurações centralizadas (URL, modelos, conexão, token)
+├── ingest.py    # Ingestão do PDF no banco vetorial
+├── search.py    # Chain RAG (retriever k=10 + prompt + LLM)
+└── chat.py      # CLI interativo de perguntas e respostas
+```
+
+### Variáveis de ambiente
+
+Crie um arquivo `.env` (veja `.env.example`) com as variáveis abaixo:
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `OPENAI_API_KEY` | Sim | Chave de acesso ao modelo |
+| `OPENAI_BASE_URL` | Não | URL do endpoint (omitir para usar a OpenAI padrão) |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | Modelo de embeddings |
+| `LLM_MODEL` | `gpt-4o-mini` | Modelo de LLM |
+| `PDF_PATH` | `document.pdf` | Caminho do PDF |
+| `DB_CONNECTION` | `postgresql+psycopg://postgres:postgres@localhost:5432/rag` | String de conexão |
+| `COLLECTION_NAME` | `pdf_collection` | Nome da collection vetorial |
+
+### Ordem de execução
+
+1. Subir o banco de dados:
+
+```
+docker compose up -d
+```
+
+2. Criar e ativar o ambiente virtual:
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+3. Configurar as variáveis de ambiente (copie `.env.example` para `.env` e preencha `OPENAI_API_KEY`).
+
+4. Executar ingestão do PDF:
+
+```
+python src/ingest.py
+```
+
+5. Rodar o chat:
+
+```
+python src/chat.py
+```
+
+### Observação sobre troca de modelo de embeddings
+
+Modelos de embedding diferentes geram vetores com dimensões diferentes. Se você trocar o `EMBEDDING_MODEL` após a primeira ingestão, é necessário apagar a collection existente (ou o volume do banco) e reingestar:
+
+```
+docker compose down -v
+docker compose up -d
+python src/ingest.py
+```
+
 ## Entregável
 
 Repositório público no GitHub contendo todo o código-fonte e README com instruções claras de execução do projeto.
